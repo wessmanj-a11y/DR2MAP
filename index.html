@@ -3,75 +3,85 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DR2MAP</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>DR2MAP Live</title>
   <style>
-    :root{--bg:#08111f;--panel:#101827;--panel2:#0b1324;--line:#243247;--text:#f8fafc;--muted:#9ca3af;--red:#ef4444;--amber:#f59e0b;--green:#10b981;--blue:#38bdf8;}
+    :root{--bg:#08111f;--panel:#101827;--line:#243247;--text:#f8fafc;--muted:#9ca3af;--blue:#38bdf8;}
     *{box-sizing:border-box}
-    body{font-family:Arial,sans-serif;margin:0;background:radial-gradient(circle at top left,rgba(56,189,248,.13),transparent 34%),linear-gradient(135deg,#020617,#0b1220);color:var(--text)}
-    .container{max-width:1600px;margin:auto;padding:24px}.hero{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}.badge{display:inline-block;padding:6px 10px;border:1px solid rgba(56,189,248,.35);border-radius:999px;color:#bae6fd;background:rgba(56,189,248,.1);font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase}.hero h1{margin:10px 0 6px;font-size:40px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin:18px 0}.layout{display:grid;grid-template-columns:2fr 1fr;gap:18px}.card{background:linear-gradient(180deg,rgba(17,24,39,.96),rgba(3,7,18,.93));padding:18px;border-radius:16px;margin-bottom:16px;border:1px solid rgba(148,163,184,.16);box-shadow:0 18px 45px rgba(0,0,0,.28)}.metric{font-size:30px;font-weight:950;margin-top:5px}.subtle{color:var(--muted)}.notice{color:#bae6fd;font-size:.9rem;margin-top:6px}.controls{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 0}select,input{background:#020617;color:#e5e7eb;border:1px solid var(--line);border-radius:10px;padding:10px}button{background:#1f2937;color:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;font-weight:800}button.active{background:linear-gradient(135deg,#0ea5e9,#1d4ed8);border-color:#38bdf8}table{width:100%;border-collapse:collapse}th,td{padding:10px;text-align:left;border-bottom:1px solid #263449}th{font-size:11px;color:#cbd5e1;text-transform:uppercase;letter-spacing:.07em}.high{color:#f87171;font-weight:bold}.mid{color:#fbbf24;font-weight:bold}.low{color:#34d399;font-weight:bold}ul{padding-left:20px}#map{height:520px;border-radius:14px;background:#dbeafe}.county-card{border-top:1px solid #374151;padding-top:12px;margin-top:12px}.source-pill{display:inline-block;margin:4px 6px 4px 0;padding:6px 8px;border:1px solid #334155;border-radius:999px;color:#cbd5e1;background:#020617;font-size:12px}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.tab-panel{display:none}.tab-panel.active{display:block}.bar-wrap{height:10px;background:#1f2937;border-radius:999px;overflow:hidden;margin-top:8px}.bar{height:100%;background:linear-gradient(90deg,var(--green),var(--amber),var(--red))}.split{display:grid;grid-template-columns:1fr 1fr;gap:16px}.mini-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.spark{height:92px} @media(max-width:1100px){.layout,.split{grid-template-columns:1fr}.hero h1{font-size:32px}}
+    body{margin:0;background:linear-gradient(135deg,#020617,#0b1220);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+    header{padding:16px 20px;background:#020617;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap}
+    h1{margin:0;font-size:24px}
+    h2{margin-top:0}
+    .subtle{color:var(--muted);font-size:13px;margin-top:4px}
+    .badge{display:inline-block;padding:6px 10px;border:1px solid rgba(56,189,248,.35);border-radius:999px;color:#bae6fd;background:rgba(56,189,248,.1);font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap}
+    button{background:#111827;color:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;font-weight:800}
+    button.active{background:linear-gradient(135deg,#0ea5e9,#1d4ed8);border-color:#38bdf8}
+    .panel{display:none}
+    .panel.active{display:block}
+    .frame-wrap{height:calc(100vh - 92px);width:100%;background:#020617}
+    .live-frame{width:100%;height:100%;border:0}
+    .info{padding:18px 20px;background:#08111f;border-top:1px solid var(--line);color:#cbd5e1;font-size:13px;line-height:1.45}
+    .sandbox{padding:24px;max-width:1100px;margin:auto}
+    .card{background:#111827;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+    .metric{font-size:28px;font-weight:900}
+    .notice{color:#bae6fd}
+    li{margin-bottom:8px}
   </style>
 </head>
 <body>
-<div class="container">
-  <div class="hero">
-    <div>
-      <span class="badge">DR2MAP Command Center</span>
-      <h1>Resilience Intelligence Dashboard</h1>
-      <p class="subtle">Premium sandbox demo: outage risk, predictive scoring, source readiness, and operational recommendations.</p>
-      <p class="notice" id="dataMode"></p>
+<header>
+  <div>
+    <span class="badge">DR2MAP Live Data Mode</span>
+    <h1>DR2MAP Resilience Command Center</h1>
+    <div class="subtle">Default mode mirrors DRMAP for accurate operational data while DR2MAP evolves commercially.</div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-tab="livePanel">Live DRMAP Mirror</button>
+    <button class="tab" data-tab="sandboxPanel">DR2MAP Sandbox</button>
+  </div>
+</header>
+
+<section id="livePanel" class="panel active">
+  <div class="frame-wrap">
+    <iframe class="live-frame" src="https://wessmanj-a11y.github.io/DRMAP/" title="Live DRMAP dashboard"></iframe>
+  </div>
+  <div class="info">
+    DR2MAP currently mirrors DRMAP to preserve the same outage, county, weather, road closure, hospital, and grid intelligence. This keeps your data correct immediately while DR2MAP is rebuilt into a full SaaS platform with proprietary backend infrastructure.
+  </div>
+</section>
+
+<section id="sandboxPanel" class="panel">
+  <div class="sandbox">
+    <h2>DR2MAP Commercial Sandbox</h2>
+    <p class="notice">This environment is reserved for premium SaaS UI, ML prediction, auth, customer accounts, and commercialization testing.</p>
+    <div class="grid">
+      <div class="card"><div class="subtle">Current live source</div><div class="metric">DRMAP</div></div>
+      <div class="card"><div class="subtle">Commercial layer</div><div class="metric">DR2MAP</div></div>
+      <div class="card"><div class="subtle">Next build</div><div class="metric">Native API</div></div>
     </div>
-    <div class="card" style="min-width:320px">
-      <div class="mini-label">Pipeline</div><strong id="pipelineStatus"></strong><br>
-      <span class="subtle" id="pipelineNext"></span>
-      <div class="bar-wrap"><div class="bar" id="modelBar" style="width:0%"></div></div>
-      <div class="subtle" id="modelReady"></div>
+    <div class="card">
+      <h3>Commercialization roadmap</h3>
+      <ol>
+        <li>Mirror DRMAP for trustworthy live operational continuity.</li>
+        <li>Extract all source adapters (TDIS, NWS, roads, ERCOT, hospital).</li>
+        <li>Build DR2MAP backend and replace iframe.</li>
+        <li>Add auth, subscriptions, billing, enterprise customer segmentation.</li>
+        <li>Deploy true SaaS platform.</li>
+      </ol>
     </div>
   </div>
+</section>
 
-  <div class="controls card">
-    <select id="regionFilter"><option value="all">All regions</option></select>
-    <select id="severityFilter"><option value="all">All severity</option><option value="severe">Severe only</option><option value="elevated">Elevated+</option><option value="stable">Stable/guarded</option></select>
-    <input id="searchBox" placeholder="Search county..." />
-    <button id="resetBtn">Reset</button>
-  </div>
-
-  <div class="grid" id="summaryCards"></div>
-
-  <div class="layout">
-    <div>
-      <div class="card">
-        <div class="tabs">
-          <button class="tab active" data-tab="mapPanel">Map</button>
-          <button class="tab" data-tab="analyticsPanel">Analytics</button>
-          <button class="tab" data-tab="countiesPanel">Counties</button>
-        </div>
-        <div id="mapPanel" class="tab-panel active"><h2>Texas Operational Risk Map</h2><div id="map"></div></div>
-        <div id="analyticsPanel" class="tab-panel"><h2>Risk Analytics</h2><div class="split"><canvas id="riskChart" class="spark"></canvas><canvas id="outageChart" class="spark"></canvas></div></div>
-        <div id="countiesPanel" class="tab-panel"><h2>County Risk Matrix</h2><table><thead><tr><th>County</th><th>Region</th><th>Risk</th><th>Probability</th><th>Confidence</th><th>Outages</th><th>Trend</th></tr></thead><tbody id="countyData"></tbody></table></div>
-      </div>
-    </div>
-
-    <div>
-      <div class="card"><h2>Priority County Drilldown</h2><div id="priorityCounty"></div></div>
-      <div class="card"><h2>Operational Recommendations</h2><ul id="recommendations"></ul></div>
-      <div class="card"><h2>Source Registry</h2><div id="sources"></div></div>
-    </div>
-  </div>
-</div>
 <script>
-const fallbackData={mode:'GitHub Pages fallback sandbox data',summary:{totalCustomersOut:106050,impactedCounties:6,severeCounties:2,activeWeatherAlerts:6,roadClosures:18,gridStatus:'Elevated Risk',statewideTrend:'+18.4%',topCounty:'Harris',modelReadiness:54},pipeline:{status:'Static fallback mode',nextMilestone:'Deploy Express backend or connect GitHub Pages to hosted API',modelReadiness:54},counties:[{name:'Dallas',region:'North Texas',risk:78,probability:72,confidence:64,severity:'Severe',outages:25200,incidents:42,weather:'Severe Thunderstorm Watch',roads:4,hospital:'Moderate capacity pressure',grid:'Elevated',trend:'Worsening',lat:32.7767,lng:-96.7970},{name:'Tarrant',region:'North Texas',risk:74,probability:68,confidence:61,severity:'High',outages:19450,incidents:37,weather:'High Wind Advisory',roads:5,hospital:'Normal',grid:'Elevated',trend:'Worsening',lat:32.7555,lng:-97.3308},{name:'Collin',region:'North Texas',risk:69,probability:59,confidence:58,severity:'Elevated',outages:14300,incidents:26,weather:'Severe Thunderstorm Watch',roads:2,hospital:'Normal',grid:'Elevated',trend:'Elevated',lat:33.1795,lng:-96.4930},{name:'Harris',region:'Gulf Coast',risk:83,probability:76,confidence:67,severity:'Severe',outages:35100,incidents:51,weather:'Flood Watch',roads:6,hospital:'Capacity watch',grid:'Watch',trend:'Worsening',lat:29.7604,lng:-95.3698},{name:'Travis',region:'Central Texas',risk:58,probability:41,confidence:52,severity:'Guarded',outages:7800,incidents:19,weather:'Heat Advisory',roads:1,hospital:'Normal',grid:'Normal',trend:'Stable',lat:30.2672,lng:-97.7431},{name:'Rockwall',region:'North Texas',risk:61,probability:48,confidence:55,severity:'Elevated',outages:4200,incidents:11,weather:'Severe Thunderstorm Watch',roads:0,hospital:'Normal',grid:'Elevated',trend:'Stable',lat:32.9312,lng:-96.4597}],recommendations:['Prioritize Harris County due to the highest combined outage, weather, and road-access pressure.','Stage monitoring across Dallas/Tarrant corridor where outages and weather pressure are moving together.','Treat Collin and Rockwall as watch counties for North Texas eastward spread.','Before commercial use, verify TDIS/source licensing and avoid reselling raw data as the product.'],dataSources:[{name:'TDIS / Texas outage feed',status:'sandbox-ready'},{name:'National Weather Service active alerts',status:'live-ready'},{name:'OpenWeather radar tiles',status:'api-key-required'},{name:'DriveTexas road closure data',status:'integration-needed'},{name:'CDC/HHS hospital capacity data',status:'integration-needed'},{name:'ERCOT grid status',status:'integration-needed'}]};
-let map,markers=[],allData=null,riskChart,outageChart;
-function riskClass(r){return r>=75?'high':r>=60?'mid':'low'}function riskColor(r){return r>=75?'#ef4444':r>=60?'#f59e0b':'#10b981'}
-function initMap(){map=L.map('map').setView([31,-99],6);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap contributors'}).addTo(map)}
-async function getDashboardData(){try{const res=await fetch('/api/dashboard');if(!res.ok)throw new Error('Backend not available');return{data:await res.json(),source:'Connected backend API'}}catch(e){return{data:fallbackData,source:'Static sandbox fallback — backend is not running on GitHub Pages'}}}
-function filteredCounties(){const region=document.getElementById('regionFilter').value,severity=document.getElementById('severityFilter').value,search=document.getElementById('searchBox').value.toLowerCase();return allData.counties.filter(c=>(region==='all'||c.region===region)&&(!search||c.name.toLowerCase().includes(search))&&(severity==='all'||(severity==='severe'&&c.risk>=75)||(severity==='elevated'&&c.risk>=60)||(severity==='stable'&&c.risk<60)))}
-function render(){const data=allData, counties=filteredCounties();document.getElementById('pipelineStatus').innerText=data.pipeline.status;document.getElementById('pipelineNext').innerText=data.pipeline.nextMilestone;document.getElementById('modelReady').innerText='Model readiness: '+data.summary.modelReadiness+'%';document.getElementById('modelBar').style.width=data.summary.modelReadiness+'%';const summary=[['Customers Out',data.summary.totalCustomersOut.toLocaleString()],['Impacted Counties',data.summary.impactedCounties],['Severe Counties',data.summary.severeCounties],['Weather Alerts',data.summary.activeWeatherAlerts],['Road Closures',data.summary.roadClosures],['Grid Status',data.summary.gridStatus],['Trend',data.summary.statewideTrend],['Visible Counties',counties.length]];document.getElementById('summaryCards').innerHTML=summary.map(i=>`<div class='card'><div class='subtle'>${i[0]}</div><div class='metric'>${i[1]}</div></div>`).join('');document.getElementById('countyData').innerHTML=counties.map(c=>`<tr><td>${c.name}</td><td>${c.region}</td><td class='${riskClass(c.risk)}'>${c.risk}</td><td>${c.probability}%</td><td>${c.confidence}%</td><td>${c.outages.toLocaleString()}</td><td>${c.trend}</td></tr>`).join('');document.getElementById('recommendations').innerHTML=data.recommendations.map(r=>`<li>${r}</li>`).join('');document.getElementById('sources').innerHTML=(data.dataSources||[]).map(s=>`<span class='source-pill'><strong>${s.name}</strong> · ${s.status}</span>`).join('');const top=[...counties].sort((a,b)=>b.risk-a.risk)[0]||data.counties[0];document.getElementById('priorityCounty').innerHTML=`<h3>${top.name} County</h3><div class='county-card'><strong>Risk:</strong> <span class='${riskClass(top.risk)}'>${top.risk}</span><br><strong>Probability:</strong> ${top.probability}%<br><strong>Confidence:</strong> ${top.confidence}%<br><strong>Outages:</strong> ${top.outages.toLocaleString()}<br><strong>Weather:</strong> ${top.weather}<br><strong>Grid:</strong> ${top.grid}<br><strong>Hospital:</strong> ${top.hospital}</div>`;markers.forEach(m=>map.removeLayer(m));markers=[];counties.forEach(c=>{const marker=L.circleMarker([c.lat,c.lng],{radius:Math.max(8,c.risk/6),color:riskColor(c.risk),fillColor:riskColor(c.risk),fillOpacity:.7}).addTo(map).bindPopup(`<strong>${c.name}</strong><br>Risk: ${c.risk}<br>Probability: ${c.probability}%<br>Outages: ${c.outages.toLocaleString()}<br>Trend: ${c.trend}`);markers.push(marker)});renderCharts(counties)}
-function renderCharts(counties){const labels=counties.map(c=>c.name);if(riskChart)riskChart.destroy();if(outageChart)outageChart.destroy();riskChart=new Chart(document.getElementById('riskChart'),{type:'bar',data:{labels,datasets:[{label:'Risk Score',data:counties.map(c=>c.risk)}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100}}}});outageChart=new Chart(document.getElementById('outageChart'),{type:'line',data:{labels,datasets:[{label:'Customers Out',data:counties.map(c=>c.outages),tension:.35}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}})}
-async function loadDashboard(){const result=await getDashboardData();allData=result.data;document.getElementById('dataMode').innerText=result.source;const regions=[...new Set(allData.counties.map(c=>c.region))];document.getElementById('regionFilter').innerHTML='<option value="all">All regions</option>'+regions.map(r=>`<option>${r}</option>`).join('');render()}
-document.querySelectorAll('.tab').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));btn.classList.add('active');document.getElementById(btn.dataset.tab).classList.add('active');setTimeout(()=>map.invalidateSize(),50)});['regionFilter','severityFilter','searchBox'].forEach(id=>document.getElementById(id).addEventListener('input',render));document.getElementById('resetBtn').onclick=()=>{document.getElementById('regionFilter').value='all';document.getElementById('severityFilter').value='all';document.getElementById('searchBox').value='';render()};initMap();loadDashboard();
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  };
+});
 </script>
 </body>
 </html>
