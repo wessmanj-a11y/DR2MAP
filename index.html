@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DR2MAP</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; background:#0b1220; color:#f3f4f6; }
+    .container { max-width:1200px; margin:auto; padding:24px; }
+    .card { background:#111827; padding:20px; border-radius:12px; margin-bottom:16px; }
+    input { padding:10px; margin:6px; border-radius:8px; border:none; }
+    button { padding:10px 16px; border:none; border-radius:8px; cursor:pointer; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { padding:10px; text-align:left; border-bottom:1px solid #374151; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>DR2MAP Resilience Command Center</h1>
+  <div id="login" class="card">
+    <h2>Secure Access</h2>
+    <input id="username" placeholder="Username" />
+    <input id="password" type="password" placeholder="Password" />
+    <button onclick="login()">Login</button>
+    <p id="error"></p>
+  </div>
+  <div id="dashboard" style="display:none;">
+    <div class="card"><h2 id="summary"></h2></div>
+    <div class="card">
+      <h3>County Risk Table</h3>
+      <table>
+        <thead><tr><th>County</th><th>Risk</th><th>Outages</th><th>Trend</th></tr></thead>
+        <tbody id="countyData"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+let token = localStorage.getItem('dr2token');
+if(token){ loadDashboard(); }
+async function login(){
+ const username=document.getElementById('username').value;
+ const password=document.getElementById('password').value;
+ const res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+ const data=await res.json();
+ if(data.token){ localStorage.setItem('dr2token',data.token); loadDashboard(); }
+ else { document.getElementById('error').innerText='Login failed'; }
+}
+async function loadDashboard(){
+ token=localStorage.getItem('dr2token');
+ const res=await fetch('/api/dashboard',{headers:{Authorization:'Bearer '+token}});
+ if(!res.ok){ localStorage.removeItem('dr2token'); return; }
+ const data=await res.json();
+ document.getElementById('login').style.display='none';
+ document.getElementById('dashboard').style.display='block';
+ document.getElementById('summary').innerText=`${data.summary.totalCustomersOut.toLocaleString()} Customers Out | ${data.summary.severeCounties} Severe Counties | Grid: ${data.summary.gridStatus}`;
+ document.getElementById('countyData').innerHTML=data.counties.map(c=>`<tr><td>${c.name}</td><td>${c.risk}</td><td>${c.outages.toLocaleString()}</td><td>${c.trend}</td></tr>`).join('');
+}
+</script>
+</body>
+</html>
