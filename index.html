@@ -6,56 +6,69 @@
   <title>DR2MAP</title>
   <style>
     body { font-family: Arial, sans-serif; margin:0; background:#0b1220; color:#f3f4f6; }
-    .container { max-width:1200px; margin:auto; padding:24px; }
-    .card { background:#111827; padding:20px; border-radius:12px; margin-bottom:16px; }
-    input { padding:10px; margin:6px; border-radius:8px; border:none; }
-    button { padding:10px 16px; border:none; border-radius:8px; cursor:pointer; }
+    .container { max-width:1400px; margin:auto; padding:24px; }
+    .hero { display:flex; justify-content:space-between; align-items:center; gap:20px; flex-wrap:wrap; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin:20px 0; }
+    .card { background:#111827; padding:20px; border-radius:14px; margin-bottom:16px; box-shadow:0 8px 24px rgba(0,0,0,.25); }
+    .metric { font-size:2rem; font-weight:bold; }
+    .subtle { color:#9ca3af; }
     table { width:100%; border-collapse: collapse; }
     th, td { padding:10px; text-align:left; border-bottom:1px solid #374151; }
+    .high { color:#f87171; font-weight:bold; }
+    .mid { color:#fbbf24; font-weight:bold; }
+    .low { color:#34d399; font-weight:bold; }
+    ul { padding-left:20px; }
   </style>
 </head>
 <body>
 <div class="container">
-  <h1>DR2MAP Resilience Command Center</h1>
-  <div id="login" class="card">
-    <h2>Secure Access</h2>
-    <input id="username" placeholder="Username" />
-    <input id="password" type="password" placeholder="Password" />
-    <button onclick="login()">Login</button>
-    <p id="error"></p>
-  </div>
-  <div id="dashboard" style="display:none;">
-    <div class="card"><h2 id="summary"></h2></div>
-    <div class="card">
-      <h3>County Risk Table</h3>
-      <table>
-        <thead><tr><th>County</th><th>Risk</th><th>Outages</th><th>Trend</th></tr></thead>
-        <tbody id="countyData"></tbody>
-      </table>
+  <div class="hero">
+    <div>
+      <h1>DR2MAP Resilience Command Center</h1>
+      <p class="subtle">Operational disruption intelligence | Sandbox Phase 2</p>
     </div>
+    <div class="card">
+      <strong>Pipeline:</strong> <span id="pipelineStatus"></span><br>
+      <span class="subtle" id="pipelineNext"></span>
+    </div>
+  </div>
+
+  <div class="grid" id="summaryCards"></div>
+
+  <div class="card">
+    <h2>Texas County Risk Matrix</h2>
+    <table>
+      <thead><tr><th>County</th><th>Region</th><th>Risk</th><th>Outages</th><th>Incidents</th><th>Roads</th><th>Trend</th></tr></thead>
+      <tbody id="countyData"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Operational Recommendations</h2>
+    <ul id="recommendations"></ul>
   </div>
 </div>
 <script>
-let token = localStorage.getItem('dr2token');
-if(token){ loadDashboard(); }
-async function login(){
- const username=document.getElementById('username').value;
- const password=document.getElementById('password').value;
- const res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
- const data=await res.json();
- if(data.token){ localStorage.setItem('dr2token',data.token); loadDashboard(); }
- else { document.getElementById('error').innerText='Login failed'; }
-}
+function riskClass(r){ if(r>=75) return 'high'; if(r>=60) return 'mid'; return 'low'; }
 async function loadDashboard(){
- token=localStorage.getItem('dr2token');
- const res=await fetch('/api/dashboard',{headers:{Authorization:'Bearer '+token}});
- if(!res.ok){ localStorage.removeItem('dr2token'); return; }
+ const res=await fetch('/api/dashboard');
  const data=await res.json();
- document.getElementById('login').style.display='none';
- document.getElementById('dashboard').style.display='block';
- document.getElementById('summary').innerText=`${data.summary.totalCustomersOut.toLocaleString()} Customers Out | ${data.summary.severeCounties} Severe Counties | Grid: ${data.summary.gridStatus}`;
- document.getElementById('countyData').innerHTML=data.counties.map(c=>`<tr><td>${c.name}</td><td>${c.risk}</td><td>${c.outages.toLocaleString()}</td><td>${c.trend}</td></tr>`).join('');
+ document.getElementById('pipelineStatus').innerText=data.pipeline.status;
+ document.getElementById('pipelineNext').innerText=data.pipeline.nextMilestone;
+ const summary=[
+  ['Customers Out', data.summary.totalCustomersOut.toLocaleString()],
+  ['Impacted Counties', data.summary.impactedCounties],
+  ['Severe Counties', data.summary.severeCounties],
+  ['Weather Alerts', data.summary.activeWeatherAlerts],
+  ['Road Closures', data.summary.roadClosures],
+  ['Grid Status', data.summary.gridStatus],
+  ['Trend', data.summary.statewideTrend]
+ ];
+ document.getElementById('summaryCards').innerHTML=summary.map(item=>`<div class='card'><div class='subtle'>${item[0]}</div><div class='metric'>${item[1]}</div></div>`).join('');
+ document.getElementById('countyData').innerHTML=data.counties.map(c=>`<tr><td>${c.name}</td><td>${c.region}</td><td class='${riskClass(c.risk)}'>${c.risk}</td><td>${c.outages.toLocaleString()}</td><td>${c.incidents}</td><td>${c.roads}</td><td>${c.trend}</td></tr>`).join('');
+ document.getElementById('recommendations').innerHTML=data.recommendations.map(r=>`<li>${r}</li>`).join('');
 }
+loadDashboard();
 </script>
 </body>
 </html>
