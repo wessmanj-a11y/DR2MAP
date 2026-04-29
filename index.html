@@ -15,6 +15,7 @@
     .card { background:#111827; padding:20px; border-radius:14px; margin-bottom:16px; box-shadow:0 8px 24px rgba(0,0,0,.25); }
     .metric { font-size:2rem; font-weight:bold; }
     .subtle { color:#9ca3af; }
+    .notice { color:#bae6fd; font-size:.9rem; margin-top:6px; }
     table { width:100%; border-collapse: collapse; }
     th, td { padding:10px; text-align:left; border-bottom:1px solid #374151; }
     .high { color:#f87171; font-weight:bold; }
@@ -31,7 +32,8 @@
   <div class="hero">
     <div>
       <h1>DR2MAP Resilience Command Center</h1>
-      <p class="subtle">Operational disruption intelligence | Phase 3 Strategic Visualization</p>
+      <p class="subtle">Operational disruption intelligence | Phase 4 Data Source Architecture</p>
+      <p class="notice" id="dataMode"></p>
     </div>
     <div class="card">
       <strong>Pipeline:</strong> <span id="pipelineStatus"></span><br>
@@ -64,30 +66,67 @@
         <h2>Priority County Drilldown</h2>
         <div id="priorityCounty"></div>
       </div>
+      <div class="card">
+        <h2>Source Registry</h2>
+        <ul id="sources"></ul>
+      </div>
     </div>
   </div>
 </div>
 <script>
+const fallbackData={
+  mode:'GitHub Pages fallback sandbox data',
+  summary:{totalCustomersOut:106050,impactedCounties:6,severeCounties:2,activeWeatherAlerts:6,roadClosures:18,gridStatus:'Elevated Risk',statewideTrend:'+18.4%',topCounty:'Harris',modelReadiness:54},
+  pipeline:{status:'Static fallback mode',nextMilestone:'Deploy Express backend or connect GitHub Pages to hosted API',modelReadiness:54},
+  counties:[
+    {name:'Dallas',region:'North Texas',risk:78,probability:72,confidence:64,severity:'Severe',outages:25200,incidents:42,weather:'Severe Thunderstorm Watch',roads:4,hospital:'Moderate capacity pressure',grid:'Elevated',trend:'Worsening',lat:32.7767,lng:-96.7970},
+    {name:'Tarrant',region:'North Texas',risk:74,probability:68,confidence:61,severity:'High',outages:19450,incidents:37,weather:'High Wind Advisory',roads:5,hospital:'Normal',grid:'Elevated',trend:'Worsening',lat:32.7555,lng:-97.3308},
+    {name:'Collin',region:'North Texas',risk:69,probability:59,confidence:58,severity:'Elevated',outages:14300,incidents:26,weather:'Severe Thunderstorm Watch',roads:2,hospital:'Normal',grid:'Elevated',trend:'Elevated',lat:33.1795,lng:-96.4930},
+    {name:'Harris',region:'Gulf Coast',risk:83,probability:76,confidence:67,severity:'Severe',outages:35100,incidents:51,weather:'Flood Watch',roads:6,hospital:'Capacity watch',grid:'Watch',trend:'Worsening',lat:29.7604,lng:-95.3698},
+    {name:'Travis',region:'Central Texas',risk:58,probability:41,confidence:52,severity:'Guarded',outages:7800,incidents:19,weather:'Heat Advisory',roads:1,hospital:'Normal',grid:'Normal',trend:'Stable',lat:30.2672,lng:-97.7431},
+    {name:'Rockwall',region:'North Texas',risk:61,probability:48,confidence:55,severity:'Elevated',outages:4200,incidents:11,weather:'Severe Thunderstorm Watch',roads:0,hospital:'Normal',grid:'Elevated',trend:'Stable',lat:32.9312,lng:-96.4597}
+  ],
+  recommendations:['Prioritize Harris County due to the highest combined outage, weather, and road-access pressure.','Stage monitoring across Dallas/Tarrant corridor where outages and weather pressure are moving together.','Treat Collin and Rockwall as watch counties for North Texas eastward spread.','Before commercial use, verify TDIS/source licensing and avoid reselling raw data as the product.'],
+  dataSources:[
+    {name:'TDIS / Texas outage feed',status:'sandbox-ready'},
+    {name:'National Weather Service active alerts',status:'live-ready'},
+    {name:'OpenWeather radar tiles',status:'api-key-required'},
+    {name:'DriveTexas road closure data',status:'integration-needed'},
+    {name:'CDC/HHS hospital capacity data',status:'integration-needed'},
+    {name:'ERCOT grid status',status:'integration-needed'}
+  ]
+};
 let map;
 function riskClass(r){ if(r>=75) return 'high'; if(r>=60) return 'mid'; return 'low'; }
 function riskColor(r){ if(r>=75) return '#ef4444'; if(r>=60) return '#f59e0b'; return '#10b981'; }
 function initMap(){
- map = L.map('map').setView([31.0,-99.0],6);
- L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'&copy; OpenStreetMap contributors' }).addTo(map);
+ map=L.map('map').setView([31.0,-99.0],6);
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
+}
+async function getDashboardData(){
+ try{
+   const res=await fetch('/api/dashboard');
+   if(!res.ok) throw new Error('Backend not available');
+   return {data:await res.json(),source:'Connected backend API'};
+ }catch(e){
+   return {data:fallbackData,source:'Static sandbox fallback — backend is not running on GitHub Pages'};
+ }
 }
 async function loadDashboard(){
- const res=await fetch('/api/dashboard');
- const data=await res.json();
+ const result=await getDashboardData();
+ const data=result.data;
+ document.getElementById('dataMode').innerText=result.source;
  document.getElementById('pipelineStatus').innerText=data.pipeline.status;
  document.getElementById('pipelineNext').innerText=data.pipeline.nextMilestone;
- const summary=[['Customers Out',data.summary.totalCustomersOut.toLocaleString()],['Impacted Counties',data.summary.impactedCounties],['Severe Counties',data.summary.severeCounties],['Weather Alerts',data.summary.activeWeatherAlerts],['Road Closures',data.summary.roadClosures],['Grid Status',data.summary.gridStatus],['Trend',data.summary.statewideTrend]];
+ const summary=[['Customers Out',data.summary.totalCustomersOut.toLocaleString()],['Impacted Counties',data.summary.impactedCounties],['Severe Counties',data.summary.severeCounties],['Weather Alerts',data.summary.activeWeatherAlerts],['Road Closures',data.summary.roadClosures],['Grid Status',data.summary.gridStatus],['Trend',data.summary.statewideTrend],['Model Ready',data.summary.modelReadiness+'%']];
  document.getElementById('summaryCards').innerHTML=summary.map(item=>`<div class='card'><div class='subtle'>${item[0]}</div><div class='metric'>${item[1]}</div></div>`).join('');
  document.getElementById('countyData').innerHTML=data.counties.map(c=>`<tr><td>${c.name}</td><td>${c.region}</td><td class='${riskClass(c.risk)}'>${c.risk}</td><td>${c.outages.toLocaleString()}</td><td>${c.incidents}</td><td>${c.roads}</td><td>${c.trend}</td></tr>`).join('');
  document.getElementById('recommendations').innerHTML=data.recommendations.map(r=>`<li>${r}</li>`).join('');
+ document.getElementById('sources').innerHTML=(data.dataSources||[]).map(s=>`<li><strong>${s.name}</strong> — ${s.status}</li>`).join('');
  const topCounty=[...data.counties].sort((a,b)=>b.risk-a.risk)[0];
- document.getElementById('priorityCounty').innerHTML=`<h3>${topCounty.name} County</h3><div class='county-card'><strong>Risk:</strong> <span class='${riskClass(topCounty.risk)}'>${topCounty.risk}</span><br><strong>Outages:</strong> ${topCounty.outages.toLocaleString()}<br><strong>Incidents:</strong> ${topCounty.incidents}<br><strong>Weather:</strong> ${topCounty.weather}<br><strong>Operational Note:</strong> Highest current disruption pressure statewide.</div>`;
+ document.getElementById('priorityCounty').innerHTML=`<h3>${topCounty.name} County</h3><div class='county-card'><strong>Risk:</strong> <span class='${riskClass(topCounty.risk)}'>${topCounty.risk}</span><br><strong>Probability:</strong> ${topCounty.probability}%<br><strong>Confidence:</strong> ${topCounty.confidence}%<br><strong>Outages:</strong> ${topCounty.outages.toLocaleString()}<br><strong>Incidents:</strong> ${topCounty.incidents}<br><strong>Weather:</strong> ${topCounty.weather}<br><strong>Operational Note:</strong> Highest current disruption pressure statewide.</div>`;
  data.counties.forEach(c=>{
-   L.circleMarker([c.lat,c.lng],{ radius:Math.max(8,c.risk/6), color:riskColor(c.risk), fillColor:riskColor(c.risk), fillOpacity:.65 }).addTo(map).bindPopup(`<strong>${c.name}</strong><br>Risk: ${c.risk}<br>Outages: ${c.outages.toLocaleString()}<br>Trend: ${c.trend}`);
+   L.circleMarker([c.lat,c.lng],{radius:Math.max(8,c.risk/6),color:riskColor(c.risk),fillColor:riskColor(c.risk),fillOpacity:.65}).addTo(map).bindPopup(`<strong>${c.name}</strong><br>Risk: ${c.risk}<br>Outages: ${c.outages.toLocaleString()}<br>Trend: ${c.trend}`);
  });
 }
 initMap();
